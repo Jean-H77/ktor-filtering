@@ -1,30 +1,31 @@
 package com.csun.api.business
 
 import kotlinx.coroutines.Dispatchers
+import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 
 class BusinessDataService {
 
-    suspend fun <T> dbQuery(block: suspend () -> T): T =
+    private suspend fun <T> dbQuery(block: suspend () -> T): T =
         newSuspendedTransaction(Dispatchers.IO) { block() }
 
-    suspend fun read(city: String): ExposedBusinessData? {
+    suspend fun read(city: String): List<ExposedBusinessData> {
         return dbQuery {
-            Business.find { BusinessTable.city eq city }
-                .singleOrNull()
-                ?.let { business ->
+            BusinessTable.select { BusinessTable.city eq city }
+                .limit(100)
+                .map {
                     ExposedBusinessData(
-                        business.name,
-                        business.address,
-                        business.city,
-                        business.state,
-                        business.postalCode,
-                        business.stars,
-                        business.reviewCount,
-                        business.isOpen,
-                        business.categories
+                        it[BusinessTable.name],
+                        it[BusinessTable.address],
+                        it[BusinessTable.city],
+                        it[BusinessTable.state],
+                        it[BusinessTable.postalCode],
+                        it[BusinessTable.stars],
+                        it[BusinessTable.reviewCount],
+                        it[BusinessTable.isOpen],
+                        it[BusinessTable.categories]
                     )
-                }
+                }.toList();
         }
     }
 }
